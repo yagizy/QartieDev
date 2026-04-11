@@ -3,48 +3,592 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#000000">
+    <meta name="theme-color" content="#6366f1">
     <title>Listy</title>
 
-    <!-- PWA Manifest -->
     <link rel="manifest" href="/manifest.json">
-
-    <!-- iOS PWA support -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --primary: #6366f1;
+            --bg: #0f0f23;
+            --surface: #1a1a2e;
+            --text: #ffffff;
+            --text-secondary: #a0a0b0;
+        }
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #0a0a0a;
-            color: #fff;
+            background: var(--bg);
+            color: var(--text);
             min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container { max-width: 600px; margin: 0 auto; }
+
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.2s, opacity 0.2s;
+        }
+
+        .btn:active { transform: scale(0.98); }
+
+        .btn-secondary {
+            background: var(--surface);
+            padding: 8px 16px;
+            font-size: 14px;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.8);
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+
+        .modal-overlay.active { display: flex; }
+
+        .modal {
+            background: var(--surface);
+            padding: 24px;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 400px;
+        }
+
+        .modal h2 { margin-bottom: 20px; font-size: 1.25rem; }
+
+        .form-group { margin-bottom: 16px; }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #333;
+            border-radius: 8px;
+            background: var(--bg);
+            color: var(--text);
+            font-size: 16px;
+        }
+
+        .emoji-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .emoji-btn {
+            padding: 12px;
+            font-size: 24px;
+            background: var(--bg);
+            border: 2px solid transparent;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .emoji-btn.selected {
+            border-color: var(--primary);
+            background: rgba(99, 102, 241, 0.2);
+        }
+
+        .color-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .color-btn {
+            width: 100%;
+            aspect-ratio: 1;
+            border: 3px solid transparent;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .color-btn.selected {
+            border-color: white;
+            transform: scale(1.1);
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 24px;
+        }
+
+        .modal-actions .btn { flex: 1; }
+
+        /* Lists */
+        .lists-grid {
+            display: grid;
+            gap: 16px;
+            margin-top: 20px;
+        }
+
+        .list-card {
+            background: var(--surface);
+            border-radius: 16px;
+            padding: 20px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            border-left: 4px solid var(--list-color, var(--primary));
+        }
+
+        .list-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        }
+
+        .list-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .list-emoji {
+            font-size: 32px;
+            width: 48px;
+            height: 48px;
             display: flex;
             align-items: center;
             justify-content: center;
+            background: rgba(255,255,255,0.1);
+            border-radius: 12px;
+        }
+
+        .list-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .list-meta {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        /* List Detail View */
+        .list-detail {
+            display: none;
+        }
+
+        .list-detail.active { display: block; }
+
+        .detail-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 24px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #333;
+        }
+
+        .back-btn {
+            background: none;
+            border: none;
+            color: var(--text);
+            font-size: 24px;
+            cursor: pointer;
+            padding: 8px;
+        }
+
+        .detail-title {
+            font-size: 1.5rem;
+            flex: 1;
+        }
+
+        .add-item-form {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .add-item-form input {
+            flex: 1;
+        }
+
+        .items-list {
+            display: flex;
             flex-direction: column;
+            gap: 12px;
         }
-        .container {
+
+        .item-card {
+            background: var(--surface);
+            padding: 16px;
+            border-radius: 12px;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .item-checkbox {
+            width: 24px;
+            height: 24px;
+            border: 2px solid var(--text-secondary);
+            border-radius: 6px;
+            cursor: pointer;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .item-content { flex: 1; }
+
+        .item-text {
+            font-size: 16px;
+            margin-bottom: 4px;
+        }
+
+        .item-note {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .empty-state {
             text-align: center;
-            padding: 2rem;
+            padding: 60px 20px;
+            color: var(--text-secondary);
         }
-        h1 { font-size: 2.5rem; margin-bottom: 1rem; }
-        p { opacity: 0.7; }
+
+        .empty-state-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>PWA Ready</h1>
-        <p>Install this app to your home screen</p>
+        <!-- Main View -->
+        <div id="mainView">
+            <h1>📋 Listy <button class="btn" onclick="openListModal()">+ New List</button></h1>
+            <div id="listsContainer" class="lists-grid"></div>
+            <div id="emptyState" class="empty-state" style="display: none;">
+                <div class="empty-state-icon">📝</div>
+                <p>No lists yet. Create your first list!</p>
+            </div>
+        </div>
+
+        <!-- List Detail View -->
+        <div id="listDetail" class="list-detail">
+            <div class="detail-header">
+                <button class="back-btn" onclick="showMainView()">←</button>
+                <span id="detailEmoji" class="list-emoji"></span>
+                <h2 id="detailTitle" class="detail-title"></h2>
+            </div>
+
+            <div class="add-item-form">
+                <input type="text" id="itemText" placeholder="Add new item..." onkeypress="handleItemKeypress(event)">
+                <input type="text" id="itemNote" placeholder="Note (optional)" onkeypress="handleItemKeypress(event)">
+                <button class="btn" onclick="addItem()">Add</button>
+            </div>
+
+            <div id="itemsContainer" class="items-list"></div>
+        </div>
+    </div>
+
+    <!-- Create List Modal -->
+    <div id="listModal" class="modal-overlay" onclick="closeModalOnOverlay(event)">
+        <div class="modal" onclick="event.stopPropagation()">
+            <h2>Create New List</h2>
+
+            <div class="form-group">
+                <label>Title</label>
+                <input type="text" id="listTitle" placeholder="e.g., Shopping, TODOs...">
+            </div>
+
+            <div class="form-group">
+                <label>Icon</label>
+                <div class="emoji-grid" id="emojiGrid"></div>
+            </div>
+
+            <div class="form-group">
+                <label>Color Theme</label>
+                <div class="color-grid" id="colorGrid"></div>
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeListModal()">Cancel</button>
+                <button class="btn" onclick="createList()">Create</button>
+            </div>
+        </div>
     </div>
 
     <script>
-        // Register Service Worker
+        // IndexedDB Setup
+        const DB_NAME = 'ListyDB';
+        const DB_VERSION = 1;
+        let db;
+        let currentListId = null;
+
+        const EMOJIS = ['📝', '🛒', '✅', '🎯', '💡', '📚', '💼', '🏠', '🎨', '🔧', '💊', '💰', '🎁', '📅', '✈️', '🍽️'];
+        const COLORS = ['#6366f1', '#ec4899', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ef4444', '#14b8a6', '#f97316', '#64748b'];
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            initDB();
+            renderEmojiGrid();
+            renderColorGrid();
+        });
+
+        function initDB() {
+            const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+            request.onerror = () => console.error('Failed to open DB');
+            request.onsuccess = (e) => {
+                db = e.target.result;
+                loadLists();
+            };
+
+            request.onupgradeneeded = (e) => {
+                const database = e.target.result;
+
+                // Lists store
+                if (!database.objectStoreNames.contains('lists')) {
+                    const listStore = database.createObjectStore('lists', { keyPath: 'id', autoIncrement: true });
+                    listStore.createIndex('created', 'created', { unique: false });
+                }
+
+                // Items store
+                if (!database.objectStoreNames.contains('items')) {
+                    const itemStore = database.createObjectStore('items', { keyPath: 'id', autoIncrement: true });
+                    itemStore.createIndex('listId', 'listId', { unique: false });
+                    itemStore.createIndex('created', 'created', { unique: false });
+                }
+            };
+        }
+
+        // UI Rendering
+        function renderEmojiGrid() {
+            const grid = document.getElementById('emojiGrid');
+            EMOJIS.forEach((emoji, i) => {
+                const btn = document.createElement('button');
+                btn.className = 'emoji-btn' + (i === 0 ? ' selected' : '');
+                btn.textContent = emoji;
+                btn.onclick = () => selectEmoji(btn, emoji);
+                grid.appendChild(btn);
+            });
+        }
+
+        function renderColorGrid() {
+            const grid = document.getElementById('colorGrid');
+            COLORS.forEach((color, i) => {
+                const btn = document.createElement('button');
+                btn.className = 'color-btn' + (i === 0 ? ' selected' : '');
+                btn.style.background = color;
+                btn.onclick = () => selectColor(btn, color);
+                grid.appendChild(btn);
+            });
+        }
+
+        let selectedEmoji = EMOJIS[0];
+        let selectedColor = COLORS[0];
+
+        function selectEmoji(btn, emoji) {
+            document.querySelectorAll('.emoji-btn').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            selectedEmoji = emoji;
+        }
+
+        function selectColor(btn, color) {
+            document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            selectedColor = color;
+        }
+
+        // Modal Controls
+        function openListModal() {
+            document.getElementById('listModal').classList.add('active');
+            document.getElementById('listTitle').focus();
+        }
+
+        function closeListModal() {
+            document.getElementById('listModal').classList.remove('active');
+            document.getElementById('listTitle').value = '';
+        }
+
+        function closeModalOnOverlay(e) {
+            if (e.target === e.currentTarget) closeListModal();
+        }
+
+        // Create List
+        function createList() {
+            const title = document.getElementById('listTitle').value.trim();
+            if (!title) return alert('Please enter a title');
+
+            const list = {
+                title,
+                emoji: selectedEmoji,
+                color: selectedColor,
+                created: Date.now()
+            };
+
+            const tx = db.transaction(['lists'], 'readwrite');
+            const store = tx.objectStore('lists');
+
+            store.add(list).onsuccess = () => {
+                closeListModal();
+                loadLists();
+            };
+        }
+
+        // Load Lists
+        function loadLists() {
+            const tx = db.transaction(['lists'], 'readonly');
+            const store = tx.objectStore('lists');
+            const request = store.getAll();
+
+            request.onsuccess = () => {
+                const lists = request.result;
+                const container = document.getElementById('listsContainer');
+                const emptyState = document.getElementById('emptyState');
+
+                if (lists.length === 0) {
+                    container.innerHTML = '';
+                    emptyState.style.display = 'block';
+                    return;
+                }
+
+                emptyState.style.display = 'none';
+                container.innerHTML = lists.map(list => `
+                    <div class="list-card" style="--list-color: ${list.color}" onclick="openList(${list.id})">
+                        <div class="list-header">
+                            <span class="list-emoji">${list.emoji}</span>
+                            <div>
+                                <div class="list-title">${escapeHtml(list.title)}</div>
+                                <div class="list-meta">Created ${new Date(list.created).toLocaleDateString()}</div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            };
+        }
+
+        // Open List Detail
+        function openList(listId) {
+            currentListId = listId;
+
+            const tx = db.transaction(['lists'], 'readonly');
+            const store = tx.objectStore('lists');
+
+            store.get(listId).onsuccess = (e) => {
+                const list = e.target.result;
+                document.getElementById('detailEmoji').textContent = list.emoji;
+                document.getElementById('detailTitle').textContent = list.title;
+                document.getElementById('detailTitle').style.color = list.color;
+
+                document.getElementById('mainView').style.display = 'none';
+                document.getElementById('listDetail').classList.add('active');
+
+                loadItems();
+            };
+        }
+
+        function showMainView() {
+            currentListId = null;
+            document.getElementById('mainView').style.display = 'block';
+            document.getElementById('listDetail').classList.remove('active');
+            loadLists();
+        }
+
+        // Items Management
+        function loadItems() {
+            const tx = db.transaction(['items'], 'readonly');
+            const store = tx.objectStore('items');
+            const index = store.index('listId');
+            const request = index.getAll(currentListId);
+
+            request.onsuccess = () => {
+                const items = request.result.sort((a, b) => b.created - a.created);
+                const container = document.getElementById('itemsContainer');
+
+                if (items.length === 0) {
+                    container.innerHTML = '<div class="empty-state"><p>No items yet. Add your first item!</p></div>';
+                    return;
+                }
+
+                container.innerHTML = items.map(item => `
+                    <div class="item-card">
+                        <div class="item-checkbox"></div>
+                        <div class="item-content">
+                            <div class="item-text">${escapeHtml(item.text)}</div>
+                            ${item.note ? `<div class="item-note">${escapeHtml(item.note)}</div>` : ''}
+                        </div>
+                    </div>
+                `).join('');
+            };
+        }
+
+        function addItem() {
+            const text = document.getElementById('itemText').value.trim();
+            const note = document.getElementById('itemNote').value.trim();
+
+            if (!text) return;
+
+            const item = {
+                listId: currentListId,
+                text,
+                note,
+                created: Date.now()
+            };
+
+            const tx = db.transaction(['items'], 'readwrite');
+            const store = tx.objectStore('items');
+
+            store.add(item).onsuccess = () => {
+                document.getElementById('itemText').value = '';
+                document.getElementById('itemNote').value = '';
+                document.getElementById('itemText').focus();
+                loadItems();
+            };
+        }
+
+        function handleItemKeypress(e) {
+            if (e.key === 'Enter') addItem();
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Service Worker
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/sw.js')
-                .then(reg => console.log('SW registered:', reg))
-                .catch(err => console.log('SW failed:', err));
+            navigator.serviceWorker.register('/sw.js');
         }
     </script>
 </body>
