@@ -208,6 +208,13 @@
             opacity: 1;
         }
 
+        /* Mobile: always visible */
+        @media (hover: none) and (pointer: coarse) {
+            .list-card .list-actions {
+                opacity: 1;
+            }
+        }
+
         .action-btn {
             background: var(--bg);
             border: none;
