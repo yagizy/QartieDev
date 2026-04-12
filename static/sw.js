@@ -1,7 +1,8 @@
 const CACHE_NAME = 'qartie-cache-v2';
 const STATIC_ASSETS = [
-    '/',
-    '/static/manifest.json',
+  './',
+  './index.html',
+  './manifest.json'
 ];
 
 self.addEventListener('install', (event) => {
