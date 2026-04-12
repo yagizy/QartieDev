@@ -1,4 +1,4 @@
-const CACHE_NAME = 'listy-cache-v1';
+const CACHE_NAME = 'listy-cache-v2';
 const STATIC_ASSETS = [
     '/',
     '/static/manifest.json',

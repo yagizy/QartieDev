@@ -17,8 +17,11 @@
             --primary: #6366f1;
             --bg: #0f0f23;
             --surface: #1a1a2e;
+            --surface-hover: #252542;
             --text: #ffffff;
             --text-secondary: #a0a0b0;
+            --danger: #ef4444;
+            --success: #10b981;
         }
 
         body {
@@ -58,6 +61,15 @@
             font-size: 14px;
         }
 
+        .btn-danger {
+            background: var(--danger);
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 13px;
+        }
+
         /* Modal */
         .modal-overlay {
             display: none;
@@ -67,6 +79,7 @@
             align-items: center;
             justify-content: center;
             z-index: 100;
+            overflow-y: auto;
         }
 
         .modal-overlay.active { display: flex; }
@@ -77,6 +90,8 @@
             border-radius: 16px;
             width: 90%;
             max-width: 400px;
+            max-height: 90vh;
+            overflow-y: auto;
         }
 
         .modal h2 { margin-bottom: 20px; font-size: 1.25rem; }
@@ -90,7 +105,7 @@
             font-size: 14px;
         }
 
-        input, select {
+        input, select, textarea {
             width: 100%;
             padding: 12px;
             border: 1px solid #333;
@@ -98,6 +113,12 @@
             background: var(--bg);
             color: var(--text);
             font-size: 16px;
+            font-family: inherit;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 80px;
         }
 
         .emoji-grid {
@@ -165,6 +186,7 @@
             cursor: pointer;
             transition: transform 0.2s, box-shadow 0.2s;
             border-left: 4px solid var(--list-color, var(--primary));
+            position: relative;
         }
 
         .list-card:hover {
@@ -172,11 +194,44 @@
             box-shadow: 0 8px 32px rgba(0,0,0,0.3);
         }
 
+        .list-actions {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            display: flex;
+            gap: 8px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .list-card:hover .list-actions {
+            opacity: 1;
+        }
+
+        .action-btn {
+            background: var(--bg);
+            border: none;
+            color: var(--text);
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .action-btn:hover {
+            background: var(--surface-hover);
+        }
+
         .list-header {
             display: flex;
             align-items: center;
             gap: 12px;
-            margin-bottom: 12px;
+            margin-bottom: 8px;
+            padding-right: 80px;
         }
 
         .list-emoji {
@@ -197,7 +252,18 @@
 
         .list-meta {
             color: var(--text-secondary);
-            font-size: 14px;
+            font-size: 13px;
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .deleted-badge {
+            background: var(--danger);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
         }
 
         /* List Detail View */
@@ -214,6 +280,7 @@
             margin-bottom: 24px;
             padding-bottom: 20px;
             border-bottom: 1px solid #333;
+            flex-wrap: wrap;
         }
 
         .back-btn {
@@ -225,19 +292,36 @@
             padding: 8px;
         }
 
+        .detail-title-section {
+            flex: 1;
+            min-width: 200px;
+        }
+
         .detail-title {
             font-size: 1.5rem;
-            flex: 1;
+            margin-bottom: 4px;
+        }
+
+        .detail-meta {
+            color: var(--text-secondary);
+            font-size: 13px;
+        }
+
+        .detail-actions {
+            display: flex;
+            gap: 8px;
         }
 
         .add-item-form {
             display: flex;
             gap: 12px;
             margin-bottom: 20px;
+            flex-wrap: wrap;
         }
 
-        .add-item-form input {
+        .add-item-form input[type="text"] {
             flex: 1;
+            min-width: 150px;
         }
 
         .items-list {
@@ -253,6 +337,11 @@
             display: flex;
             align-items: flex-start;
             gap: 12px;
+            transition: opacity 0.2s;
+        }
+
+        .item-card.deleted {
+            opacity: 0.5;
         }
 
         .item-checkbox {
@@ -263,6 +352,21 @@
             cursor: pointer;
             flex-shrink: 0;
             margin-top: 2px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .item-checkbox.checked {
+            background: var(--success);
+            border-color: var(--success);
+        }
+
+        .item-checkbox.checked::after {
+            content: '✓';
+            color: white;
+            font-size: 14px;
         }
 
         .item-content { flex: 1; }
@@ -272,9 +376,25 @@
             margin-bottom: 4px;
         }
 
+        .item-text.completed {
+            text-decoration: line-through;
+            opacity: 0.6;
+        }
+
         .item-note {
             font-size: 14px;
             color: var(--text-secondary);
+        }
+
+        .item-actions {
+            display: flex;
+            gap: 6px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .item-card:hover .item-actions {
+            opacity: 1;
         }
 
         .empty-state {
@@ -288,6 +408,72 @@
             margin-bottom: 16px;
             opacity: 0.5;
         }
+
+        /* History View */
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+
+        .history-item {
+            background: var(--bg);
+            padding: 16px;
+            border-radius: 12px;
+            border-left: 3px solid var(--primary);
+        }
+
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .history-action {
+            background: var(--primary);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+
+        .history-action.delete {
+            background: var(--danger);
+        }
+
+        .history-content {
+            font-size: 14px;
+        }
+
+        .history-content .label {
+            color: var(--text-secondary);
+            font-size: 12px;
+            margin-bottom: 4px;
+        }
+
+        .show-deleted {
+            margin-top: 16px;
+            text-align: center;
+        }
+
+        .toggle-deleted {
+            background: none;
+            border: 1px solid var(--text-secondary);
+            color: var(--text-secondary);
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .toggle-deleted.active {
+            border-color: var(--danger);
+            color: var(--danger);
+        }
     </style>
 </head>
 <body>
@@ -300,14 +486,27 @@
                 <div class="empty-state-icon">📝</div>
                 <p>No lists yet. Create your first list!</p>
             </div>
+            <div class="show-deleted">
+                <button class="toggle-deleted" id="showDeletedBtn" onclick="toggleShowDeleted()">
+                    Show deleted lists
+                </button>
+            </div>
         </div>
 
         <!-- List Detail View -->
         <div id="listDetail" class="list-detail">
             <div class="detail-header">
                 <button class="back-btn" onclick="showMainView()">←</button>
-                <span id="detailEmoji" class="list-emoji"></span>
-                <h2 id="detailTitle" class="detail-title"></h2>
+                <div class="detail-title-section">
+                    <span id="detailEmoji" class="list-emoji" style="display: inline-flex; margin-bottom: 8px;"></span>
+                    <h2 id="detailTitle" class="detail-title"></h2>
+                    <div class="detail-meta" id="detailMeta"></div>
+                </div>
+                <div class="detail-actions">
+                    <button class="btn btn-secondary btn-small" onclick="openEditListModal()">Edit</button>
+                    <button class="btn btn-secondary btn-small" onclick="openListHistory()">History</button>
+                    <button class="btn btn-danger btn-small" onclick="deleteCurrentList()">Delete</button>
+                </div>
             </div>
 
             <div class="add-item-form">
@@ -317,13 +516,19 @@
             </div>
 
             <div id="itemsContainer" class="items-list"></div>
+
+            <div class="show-deleted" style="margin-top: 20px;">
+                <button class="toggle-deleted" id="showDeletedItemsBtn" onclick="toggleShowDeletedItems()">
+                    Show deleted items
+                </button>
+            </div>
         </div>
     </div>
 
-    <!-- Create List Modal -->
+    <!-- Create/Edit List Modal -->
     <div id="listModal" class="modal-overlay" onclick="closeModalOnOverlay(event)">
         <div class="modal" onclick="event.stopPropagation()">
-            <h2>Create New List</h2>
+            <h2 id="listModalTitle">Create New List</h2>
 
             <div class="form-group">
                 <label>Title</label>
@@ -342,7 +547,41 @@
 
             <div class="modal-actions">
                 <button class="btn btn-secondary" onclick="closeListModal()">Cancel</button>
-                <button class="btn" onclick="createList()">Create</button>
+                <button class="btn" onclick="saveList()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Item Modal -->
+    <div id="itemModal" class="modal-overlay" onclick="closeModalOnOverlay(event)">
+        <div class="modal" onclick="event.stopPropagation()">
+            <h2>Edit Item</h2>
+
+            <div class="form-group">
+                <label>Text</label>
+                <input type="text" id="editItemText">
+            </div>
+
+            <div class="form-group">
+                <label>Note (optional)</label>
+                <textarea id="editItemNote"></textarea>
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeItemModal()">Cancel</button>
+                <button class="btn btn-danger" onclick="deleteItem()">Delete</button>
+                <button class="btn" onclick="saveItem()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- History Modal -->
+    <div id="historyModal" class="modal-overlay" onclick="closeModalOnOverlay(event)">
+        <div class="modal" onclick="event.stopPropagation()" style="max-width: 500px;">
+            <h2 id="historyTitle">Version History</h2>
+            <div id="historyContent" class="history-list"></div>
+            <div class="modal-actions" style="margin-top: 16px;">
+                <button class="btn btn-secondary" onclick="closeHistoryModal()">Close</button>
             </div>
         </div>
     </div>
@@ -350,14 +589,17 @@
     <script>
         // IndexedDB Setup
         const DB_NAME = 'ListyDB';
-        const DB_VERSION = 1;
+        const DB_VERSION = 2;
         let db;
         let currentListId = null;
+        let editingItemId = null;
+        let editingListId = null;
+        let showDeleted = false;
+        let showDeletedItems = false;
 
         const EMOJIS = ['📝', '🛒', '✅', '🎯', '💡', '📚', '💼', '🏠', '🎨', '🔧', '💊', '💰', '🎁', '📅', '✈️', '🍽️'];
         const COLORS = ['#6366f1', '#ec4899', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ef4444', '#14b8a6', '#f97316', '#64748b'];
 
-        // Initialize
         document.addEventListener('DOMContentLoaded', () => {
             initDB();
             renderEmojiGrid();
@@ -376,24 +618,25 @@
             request.onupgradeneeded = (e) => {
                 const database = e.target.result;
 
-                // Lists store
                 if (!database.objectStoreNames.contains('lists')) {
                     const listStore = database.createObjectStore('lists', { keyPath: 'id', autoIncrement: true });
                     listStore.createIndex('created', 'created', { unique: false });
+                    listStore.createIndex('listGroupId', 'listGroupId', { unique: false });
+                    listStore.createIndex('deleted', 'deleted', { unique: false });
                 }
 
-                // Items store
                 if (!database.objectStoreNames.contains('items')) {
                     const itemStore = database.createObjectStore('items', { keyPath: 'id', autoIncrement: true });
-                    itemStore.createIndex('listId', 'listId', { unique: false });
+                    itemStore.createIndex('listGroupId', 'listGroupId', { unique: false });
                     itemStore.createIndex('created', 'created', { unique: false });
+                    itemStore.createIndex('deleted', 'deleted', { unique: false });
                 }
             };
         }
 
-        // UI Rendering
         function renderEmojiGrid() {
             const grid = document.getElementById('emojiGrid');
+            grid.innerHTML = '';
             EMOJIS.forEach((emoji, i) => {
                 const btn = document.createElement('button');
                 btn.className = 'emoji-btn' + (i === 0 ? ' selected' : '');
@@ -405,6 +648,7 @@
 
         function renderColorGrid() {
             const grid = document.getElementById('colorGrid');
+            grid.innerHTML = '';
             COLORS.forEach((color, i) => {
                 const btn = document.createElement('button');
                 btn.className = 'color-btn' + (i === 0 ? ' selected' : '');
@@ -431,48 +675,270 @@
 
         // Modal Controls
         function openListModal() {
+            editingListId = null;
+            document.getElementById('listModalTitle').textContent = 'Create New List';
+            document.getElementById('listTitle').value = '';
+            selectEmoji(document.querySelector('.emoji-btn'), EMOJIS[0]);
+            selectColor(document.querySelector('.color-btn'), COLORS[0]);
             document.getElementById('listModal').classList.add('active');
             document.getElementById('listTitle').focus();
         }
 
+        function openEditListModal() {
+            if (!currentListId) return;
+
+            const tx = db.transaction(['lists'], 'readonly');
+            const store = tx.objectStore('lists');
+
+            // Get current version of the list
+            const index = store.index('listGroupId');
+            const request = index.openCursor(currentListId, 'prev');
+
+            request.onsuccess = (e) => {
+                const cursor = e.target.result;
+                if (cursor) {
+                    const list = cursor.value;
+                    editingListId = currentListId;
+                    document.getElementById('listModalTitle').textContent = 'Edit List';
+                    document.getElementById('listTitle').value = list.title;
+
+                    // Select current emoji and color
+                    document.querySelectorAll('.emoji-btn').forEach(btn => {
+                        btn.classList.toggle('selected', btn.textContent === list.emoji);
+                    });
+                    selectedEmoji = list.emoji;
+
+                    document.querySelectorAll('.color-btn').forEach(btn => {
+                        btn.classList.toggle('selected', btn.style.background === list.color);
+                    });
+                    selectedColor = list.color;
+
+                    document.getElementById('listModal').classList.add('active');
+                }
+            };
+
+            request.onerror = (e) => {
+                console.log(e);
+            }
+        }
+
         function closeListModal() {
             document.getElementById('listModal').classList.remove('active');
-            document.getElementById('listTitle').value = '';
+            editingListId = null;
+        }
+
+        function openItemModal(itemId) {
+            editingItemId = itemId;
+            const tx = db.transaction(['items'], 'readonly');
+            const store = tx.objectStore('items');
+
+            store.get(itemId).onsuccess = (e) => {
+                const item = e.target.result;
+                document.getElementById('editItemText').value = item.text;
+                document.getElementById('editItemNote').value = item.note || '';
+                document.getElementById('itemModal').classList.add('active');
+            };
+        }
+
+        function closeItemModal() {
+            document.getElementById('itemModal').classList.remove('active');
+            editingItemId = null;
+        }
+
+        function openListHistory() {
+            if (!currentListId) return;
+            showHistory('list', currentListId);
+        }
+
+        function openItemHistory(itemGroupId) {
+            showHistory('item', itemGroupId);
+        }
+
+        function showHistory(type, groupId) {
+            const storeName = type === 'list' ? 'lists' : 'items';
+            const tx = db.transaction([storeName], 'readonly');
+            const store = tx.objectStore(storeName);
+            const index = store.index(type === 'list' ? 'listGroupId' : 'listGroupId');
+
+            // For items, groupId is already the listGroupId
+            // For lists, we need to get all versions by listGroupId
+            const request = index.getAll(groupId);
+
+            request.onsuccess = () => {
+                const versions = request.result.sort((a, b) => b.created - a.created);
+
+                document.getElementById('historyTitle').textContent =
+                    type === 'list' ? 'List Version History' : 'Item Version History';
+
+                const content = document.getElementById('historyContent');
+
+                if (versions.length === 0) {
+                    content.innerHTML = '<div class="empty-state">No history found</div>';
+                } else {
+                    content.innerHTML = versions.map(v => `
+                        <div class="history-item" style="${v.deleted ? 'opacity: 0.6; border-left-color: var(--danger)' : ''}">
+                            <div class="history-header">
+                                <span>${new Date(v.created).toLocaleString()}</span>
+                                <span class="history-action ${v.deleted ? 'delete' : ''}">${v.deleted ? 'DELETED' : (v.id === versions[versions.length - 1].id ? 'CREATED' : 'EDITED')}</span>
+                            </div>
+                            <div class="history-content">
+                                ${type === 'list' ? `
+                                    <div class="label">Title</div>
+                                    <div style="font-size: 18px; margin-bottom: 8px;">
+                                        <span style="margin-right: 8px;">${v.emoji}</span>
+                                        ${escapeHtml(v.title)}
+                                    </div>
+                                    <div class="label">Color</div>
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <div style="width: 20px; height: 20px; background: ${v.color}; border-radius: 50%;"></div>
+                                        <span style="font-size: 13px; color: var(--text-secondary);">${v.color}</span>
+                                    </div>
+                                ` : `
+                                    <div class="label">Text</div>
+                                    <div style="font-size: 16px; margin-bottom: 4px;">${escapeHtml(v.text)}</div>
+                                    ${v.note ? `<div class="label">Note</div><div style="color: var(--text-secondary);">${escapeHtml(v.note)}</div>` : ''}
+                                `}
+                            </div>
+                        </div>
+                    `).join('');
+                }
+
+                document.getElementById('historyModal').classList.add('active');
+            };
+
+            request.onerror = (e) => {
+                console.log(e);
+            }
+        }
+
+        function closeHistoryModal() {
+            document.getElementById('historyModal').classList.remove('active');
         }
 
         function closeModalOnOverlay(e) {
-            if (e.target === e.currentTarget) closeListModal();
+            if (e.target === e.currentTarget) {
+                closeListModal();
+                closeItemModal();
+                closeHistoryModal();
+            }
         }
 
-        // Create List
-        function createList() {
+        // List Operations
+        function saveList() {
             const title = document.getElementById('listTitle').value.trim();
             if (!title) return alert('Please enter a title');
 
+            const now = Date.now();
+            const listGroupId = editingListId || crypto.randomUUID();
+
             const list = {
+                listGroupId: listGroupId,
                 title,
                 emoji: selectedEmoji,
                 color: selectedColor,
-                created: Date.now()
+                created: now,
+                deleted: false
             };
 
             const tx = db.transaction(['lists'], 'readwrite');
             const store = tx.objectStore('lists');
 
-            store.add(list).onsuccess = () => {
-                closeListModal();
-                loadLists();
+            store.add(list).onsuccess = (e) => {
+                const newId = e.target.result;
+
+                if (editingListId) {
+                    // Update all items to point to new list version if needed
+                    // For now, items reference listGroupId so they stay connected
+                    closeListModal();
+                    openList(listGroupId);
+                } else {
+                    closeListModal();
+                    loadLists();
+                }
             };
         }
 
-        // Load Lists
+        function deleteCurrentList() {
+            if (!currentListId || !confirm('Delete this list? Items will be soft-deleted too.')) return;
+
+            const now = Date.now();
+
+            // Get current list to create deleted version
+            const tx = db.transaction(['lists'], 'readonly');
+            const store = tx.objectStore('lists');
+            const index = store.index('listGroupId');
+            const request = index.openCursor(currentListId, 'prev');
+
+            request.onsuccess = (e) => {
+                const cursor = e.target.result;
+                if (cursor) {
+                    const currentList = cursor.value;
+
+                    // Create deleted version
+                    const deletedList = {
+                        ...currentList,
+                        created: now,
+                        deleted: true
+                    };
+
+                    const writeTx = db.transaction(['lists'], 'readwrite');
+                    const writeStore = writeTx.objectStore('lists');
+
+                    writeStore.add(deletedList).onsuccess = () => {
+                        // Also soft-delete all items
+                        const itemTx = db.transaction(['items'], 'readonly');
+                        const itemStore = itemTx.objectStore('items');
+                        const itemIndex = itemStore.index('listGroupId');
+
+                        itemIndex.openCursor(currentListId).onsuccess = (ev) => {
+                            const itemCursor = ev.target.result;
+                            if (itemCursor) {
+                                const item = itemCursor.value;
+                                if (!item.deleted) {
+                                    const itemWriteTx = db.transaction(['items'], 'readwrite');
+                                    const itemWriteStore = itemWriteTx.objectStore('items');
+                                    itemWriteStore.add({
+                                        ...item,
+                                        created: now,
+                                        deleted: true
+                                    });
+                                }
+                                itemCursor.continue();
+                            }
+                        };
+
+                        showMainView();
+                    };
+                }
+            };
+
+            request.onerror = (e) => {
+                console.log(e);
+            }
+        }
+
         function loadLists() {
             const tx = db.transaction(['lists'], 'readonly');
             const store = tx.objectStore('lists');
             const request = store.getAll();
 
             request.onsuccess = () => {
-                const lists = request.result;
+                // Group by listGroupId, get latest version of each
+                const allLists = request.result;
+                console.log('Got all lists ' + allLists);
+                const listMap = new Map();
+
+                allLists.forEach(list => {
+                    const existing = listMap.get(list.listGroupId);
+                    if (!existing || list.created > existing.created) {
+                        listMap.set(list.listGroupId, list);
+                    }
+                });
+
+                const lists = Array.from(listMap.values())
+                    .filter(l => showDeleted ? true : !l.deleted)
+                    .sort((a, b) => b.created - a.created);
+
                 const container = document.getElementById('listsContainer');
                 const emptyState = document.getElementById('emptyState');
 
@@ -484,37 +950,112 @@
 
                 emptyState.style.display = 'none';
                 container.innerHTML = lists.map(list => `
-                    <div class="list-card" style="--list-color: ${list.color}" onclick="openList(${list.id})">
+                    <div class="list-card ${list.deleted ? 'deleted' : ''}"
+                         style="--list-color: ${list.color}${list.deleted ? '66' : ''}"
+                         onclick="${list.deleted ? '' : `openList('${list.listGroupId}')`}">
+                        <div class="list-actions" onclick="event.stopPropagation()">
+                            <button class="action-btn" onclick="openEditListFromCard('${list.listGroupId}')" title="Edit">✏️</button>
+                            <button class="action-btn" onclick="openListHistoryFromCard('${list.listGroupId}')" title="History">📜</button>
+                            <button class="action-btn" onclick="deleteList('${list.listGroupId}')" title="Delete">🗑️</button>
+                        </div>
                         <div class="list-header">
                             <span class="list-emoji">${list.emoji}</span>
                             <div>
-                                <div class="list-title">${escapeHtml(list.title)}</div>
-                                <div class="list-meta">Created ${new Date(list.created).toLocaleDateString()}</div>
+                                <div class="list-title">${escapeHtml(list.title)} ${list.deleted ? '<span class="deleted-badge">DELETED</span>' : ''}</div>
+                                <div class="list-meta">
+                                    <span>Created ${new Date(list.created).toLocaleDateString()}</span>
+                                    <span>•</span>
+                                    <span>${list.color}</span>
+                                </div>
                             </div>
                         </div>
                     </div>
                 `).join('');
             };
+
+            request.onerror = (e) => {
+                console.log(e);
+            }
         }
 
-        // Open List Detail
-        function openList(listId) {
-            currentListId = listId;
+        function openList(listGroupId) {
+            currentListId = listGroupId;
 
             const tx = db.transaction(['lists'], 'readonly');
             const store = tx.objectStore('lists');
+            const index = store.index('listGroupId');
+            const request = index.openCursor(listGroupId, 'prev');
 
-            store.get(listId).onsuccess = (e) => {
-                const list = e.target.result;
+            request.onsuccess = (e) => {
+                const cursor = e.target.result;
+                if (!cursor) return showMainView();
+
+                const list = cursor.value;
                 document.getElementById('detailEmoji').textContent = list.emoji;
                 document.getElementById('detailTitle').textContent = list.title;
                 document.getElementById('detailTitle').style.color = list.color;
+                document.getElementById('detailMeta').innerHTML = `
+                    Created: ${new Date(list.created).toLocaleString()}<br>
+                    Last edited: ${new Date(list.created).toLocaleString()}
+                `;
 
                 document.getElementById('mainView').style.display = 'none';
                 document.getElementById('listDetail').classList.add('active');
 
                 loadItems();
             };
+
+            request.onerror = (e) => {
+                console.log(e);
+            }
+        }
+
+        function openListFromCard(listGroupId) {
+            openList(listGroupId);
+        }
+
+        function openEditListFromCard(listGroupId) {
+            event.stopPropagation();
+            currentListId = listGroupId;
+            openEditListModal();
+        }
+
+        function openListHistoryFromCard(listGroupId) {
+            event.stopPropagation();
+            showHistory('list', listGroupId);
+        }
+
+        function deleteList(listGroupId) {
+            event.stopPropagation();
+            if (!confirm('Delete this list?')) return;
+
+            const now = Date.now();
+            const tx = db.transaction(['lists'], 'readonly');
+            const store = tx.objectStore('lists');
+            const index = store.index('listGroupId');
+            const request = index.openCursor(listGroupId, 'prev');
+
+            request.onsuccess = (e) => {
+                const cursor = e.target.result;
+                if (cursor) {
+                    const currentList = cursor.value;
+                    const deletedList = {
+                        ...currentList,
+                        created: now,
+                        deleted: true
+                    };
+
+                    const writeTx = db.transaction(['lists'], 'readwrite');
+                    const writeStore = writeTx.objectStore('lists');
+                    const request = writeStore.add(deletedList);
+                    request.onsuccess = () => loadLists();
+                    request.onerror = (err) => console.log(err);
+                }
+            };
+
+            request.onerror = (e) => {
+                console.log(e);
+            }
         }
 
         function showMainView() {
@@ -524,15 +1065,41 @@
             loadLists();
         }
 
-        // Items Management
+        function toggleShowDeleted() {
+            showDeleted = !showDeleted;
+            document.getElementById('showDeletedBtn').textContent =
+                showDeleted ? 'Hide deleted lists' : 'Show deleted lists';
+            document.getElementById('showDeletedBtn').classList.toggle('active', showDeleted);
+            loadLists();
+        }
+
+        // Item Operations
         function loadItems() {
             const tx = db.transaction(['items'], 'readonly');
             const store = tx.objectStore('items');
-            const index = store.index('listId');
+            const index = store.index('listGroupId');
             const request = index.getAll(currentListId);
 
             request.onsuccess = () => {
-                const items = request.result.sort((a, b) => b.created - a.created);
+                // Group by item's own id (which is the group id for items), get latest
+                const allItems = request.result;
+                const itemMap = new Map();
+
+                allItems.forEach(item => {
+                    // Use the item's id as the group identifier for versioning
+                    // Actually, we need a separate groupId for items
+                    // Let me fix this - items should have itemGroupId
+                    const groupId = item.itemGroupId || item.id;
+                    const existing = itemMap.get(groupId);
+                    if (!existing || item.created > existing.created) {
+                        itemMap.set(groupId, item);
+                    }
+                });
+
+                const items = Array.from(itemMap.values())
+                    .filter(i => showDeletedItems ? true : !i.deleted)
+                    .sort((a, b) => b.created - a.created);
+
                 const container = document.getElementById('itemsContainer');
 
                 if (items.length === 0) {
@@ -541,15 +1108,25 @@
                 }
 
                 container.innerHTML = items.map(item => `
-                    <div class="item-card">
-                        <div class="item-checkbox"></div>
+                    <div class="item-card ${item.deleted ? 'deleted' : ''}"
+                         onclick="${item.deleted ? '' : `toggleItemComplete(${item.id})`}">
+                        <div class="item-checkbox ${item.completed ? 'checked' : ''}"></div>
                         <div class="item-content">
-                            <div class="item-text">${escapeHtml(item.text)}</div>
+                            <div class="item-text ${item.completed ? 'completed' : ''}">${escapeHtml(item.text)}</div>
                             ${item.note ? `<div class="item-note">${escapeHtml(item.note)}</div>` : ''}
+                        </div>
+                        <div class="item-actions" onclick="event.stopPropagation()">
+                            <button class="action-btn" onclick="openEditItemModal(${item.id})" title="Edit">✏️</button>
+                            <button class="action-btn" onclick="openItemHistory('${item.itemGroupId || item.id}')" title="History">📜</button>
+                            <button class="action-btn" onclick="deleteItemById(${item.id})" title="Delete">🗑️</button>
                         </div>
                     </div>
                 `).join('');
             };
+
+            request.onerror = (e) => {
+                console.log(e);
+            }
         }
 
         function addItem() {
@@ -558,11 +1135,17 @@
 
             if (!text) return;
 
+            const now = Date.now();
+            const itemGroupId = crypto.randomUUID();
+
             const item = {
-                listId: currentListId,
+                listGroupId: currentListId,
+                itemGroupId: itemGroupId,
                 text,
                 note,
-                created: Date.now()
+                completed: false,
+                created: now,
+                deleted: false
             };
 
             const tx = db.transaction(['items'], 'readwrite');
@@ -578,6 +1161,117 @@
 
         function handleItemKeypress(e) {
             if (e.key === 'Enter') addItem();
+        }
+
+        function toggleItemComplete(itemId) {
+            const tx = db.transaction(['items'], 'readonly');
+            const store = tx.objectStore('items');
+
+            store.get(itemId).onsuccess = (e) => {
+                const item = e.target.result;
+                const updatedItem = {
+                    ...item,
+                    completed: !item.completed,
+                    created: Date.now()
+                };
+
+                const writeTx = db.transaction(['items'], 'readwrite');
+                const writeStore = writeTx.objectStore('items');
+                writeStore.add(updatedItem).onsuccess = () => loadItems();
+            };
+        }
+
+        function openEditItemModal(itemId) {
+            editingItemId = itemId;
+            const tx = db.transaction(['items'], 'readonly');
+            const store = tx.objectStore('items');
+
+            store.get(itemId).onsuccess = (e) => {
+                const item = e.target.result;
+                document.getElementById('editItemText').value = item.text;
+                document.getElementById('editItemNote').value = item.note || '';
+                document.getElementById('itemModal').classList.add('active');
+            };
+        }
+
+        function saveItem() {
+            if (!editingItemId) return;
+
+            const text = document.getElementById('editItemText').value.trim();
+            if (!text) return alert('Please enter item text');
+
+            const note = document.getElementById('editItemNote').value.trim();
+
+            const tx = db.transaction(['items'], 'readonly');
+            const store = tx.objectStore('items');
+
+            store.get(editingItemId).onsuccess = (e) => {
+                const currentItem = e.target.result;
+                const updatedItem = {
+                    ...currentItem,
+                    text,
+                    note,
+                    created: Date.now()
+                };
+
+                const writeTx = db.transaction(['items'], 'readwrite');
+                const writeStore = writeTx.objectStore('items');
+                writeStore.add(updatedItem).onsuccess = () => {
+                    closeItemModal();
+                    loadItems();
+                };
+            };
+        }
+
+        function deleteItem() {
+            if (!editingItemId || !confirm('Delete this item?')) return;
+
+            const tx = db.transaction(['items'], 'readonly');
+            const store = tx.objectStore('items');
+
+            store.get(editingItemId).onsuccess = (e) => {
+                const item = e.target.result;
+                const deletedItem = {
+                    ...item,
+                    created: Date.now(),
+                    deleted: true
+                };
+
+                const writeTx = db.transaction(['items'], 'readwrite');
+                const writeStore = writeTx.objectStore('items');
+                writeStore.add(deletedItem).onsuccess = () => {
+                    closeItemModal();
+                    loadItems();
+                };
+            };
+        }
+
+        function deleteItemById(itemId) {
+            if (!confirm('Delete this item?')) return;
+
+            const tx = db.transaction(['items'], 'readonly');
+            const store = tx.objectStore('items');
+
+            store.get(itemId).onsuccess = (e) => {
+                const item = e.target.result;
+                const deletedItem = {
+                    ...item,
+                    created: Date.now(),
+                    deleted: true
+                };
+
+                const writeTx = db.transaction(['items'], 'readwrite');
+                const writeStore = writeTx.objectStore('items');
+                writeStore.add(deletedItem).onsuccess = () => loadItems();
+            };
+        }
+
+        function toggleShowDeletedItems() {
+            showDeletedItems = !showDeletedItems;
+            document.getElementById('showDeletedItemsBtn').textContent =
+                showDeletedItems ? 'Hide deleted items' : 'Show deleted items';
+            document.getElementById('showDeletedItemsBtn').classList.toggle('active', showDeletedItems);
+            loadItems();
         }
 
         function escapeHtml(text) {
