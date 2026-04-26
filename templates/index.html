@@ -10,6 +10,10 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
+    <!-- QR Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -40,6 +44,7 @@
             display: flex;
             align-items: center;
             gap: 12px;
+            flex-wrap: wrap;
         }
 
         .btn {
@@ -80,6 +85,7 @@
             justify-content: center;
             z-index: 100;
             overflow-y: auto;
+            padding: 20px;
         }
 
         .modal-overlay.active { display: flex; }
@@ -317,6 +323,7 @@
         .detail-actions {
             display: flex;
             gap: 8px;
+            flex-wrap: wrap;
         }
 
         .add-item-form {
@@ -404,6 +411,13 @@
             opacity: 1;
         }
 
+        /* Mobile: always visible */
+        @media (hover: none) and (pointer: coarse) {
+            .item-card .item-actions {
+                opacity: 1;
+            }
+        }
+
         .empty-state {
             text-align: center;
             padding: 60px 20px;
@@ -481,6 +495,104 @@
             border-color: var(--danger);
             color: var(--danger);
         }
+
+        /* QR Export Styles */
+        .qr-preview-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .qr-card-canvas {
+            max-width: 100%;
+            height: auto;
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+        }
+
+        .qr-info {
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        /* Import Styles */
+        .import-options {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin: 20px 0;
+        }
+
+        .import-btn {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px;
+            background: var(--bg);
+            border: 2px dashed var(--text-secondary);
+            border-radius: 12px;
+            color: var(--text);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .import-btn:hover {
+            border-color: var(--primary);
+            background: var(--surface-hover);
+        }
+
+        .import-icon {
+            font-size: 24px;
+        }
+
+        .import-text {
+            flex: 1;
+        }
+
+        .import-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .import-desc {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        #qrFileInput {
+            display: none;
+        }
+
+        .import-preview {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .import-preview img {
+            max-width: 100%;
+            border-radius: 12px;
+            margin-bottom: 12px;
+        }
+
+        .import-status {
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 12px;
+            font-size: 14px;
+        }
+
+        .import-status.success {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--success);
+        }
+
+        .import-status.error {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--danger);
+        }
     </style>
 </head>
 <body>
@@ -490,6 +602,7 @@
             <div class="list-actions">
                 <button class="action-btn edit-btn" title="Edit">✏️</button>
                 <button class="action-btn history-btn" title="History">📜</button>
+                <button class="action-btn export-btn" title="Export QR">📤</button>
                 <button class="action-btn delete-btn" title="Delete">🗑️</button>
             </div>
             <div class="list-header">
@@ -530,7 +643,10 @@
     <div class="container">
         <!-- Main View -->
         <div id="mainView">
-            <h1>📋 Qartie <button class="btn" onclick="openListModal()">+ New List</button></h1>
+            <h1>📋 Qartie
+                <button class="btn" onclick="openListModal()">+ New List</button>
+                <button class="btn btn-secondary" onclick="openImportModal()">📥 Import</button>
+            </h1>
             <div id="listsContainer" class="lists-grid"></div>
             <div id="emptyState" class="empty-state" style="display: none;">
                 <div class="empty-state-icon">📝</div>
@@ -555,6 +671,7 @@
                 <div class="detail-actions">
                     <button class="btn btn-secondary btn-small" onclick="openEditListModal()">Edit</button>
                     <button class="btn btn-secondary btn-small" onclick="openListHistory()">History</button>
+                    <button class="btn btn-secondary btn-small" onclick="exportCurrentList()">📤 Export QR</button>
                     <button class="btn btn-danger btn-small" onclick="deleteCurrentList()">Delete</button>
                 </div>
             </div>
@@ -636,6 +753,59 @@
         </div>
     </div>
 
+    <!-- QR Export Modal -->
+    <div id="qrExportModal" class="modal-overlay" onclick="closeModalOnOverlay(event)">
+        <div class="modal" onclick="event.stopPropagation()" style="max-width: 450px;">
+            <h2>Export List</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 16px; font-size: 14px;">
+                Scan this QR code with another device to import the list.
+            </p>
+
+            <div class="qr-preview-container">
+                <canvas id="qrCardCanvas" class="qr-card-canvas" width="600" height="800"></canvas>
+                <div class="qr-info" id="qrInfo"></div>
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeQrExportModal()">Close</button>
+                <button class="btn" onclick="downloadQrCard()">⬇️ Download</button>
+                <button class="btn" onclick="shareQrCard()" id="shareBtn" style="display: none;">📤 Share</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Import Modal -->
+    <div id="importModal" class="modal-overlay" onclick="closeModalOnOverlay(event)">
+        <div class="modal" onclick="event.stopPropagation()">
+            <h2>Import List</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 16px; font-size: 14px;">
+                Import a list from a QR code image.
+            </p>
+
+            <div class="import-options">
+                <label class="import-btn" for="qrFileInput">
+                    <span class="import-icon">🖼️</span>
+                    <span class="import-text">
+                        <div class="import-title">Choose from Gallery</div>
+                        <div class="import-desc">Select a QR code image</div>
+                    </span>
+                </label>
+
+                <input type="file" id="qrFileInput" accept="image/*" onchange="handleQrFileSelect(event)">
+            </div>
+
+            <div id="importPreview" class="import-preview" style="display: none;">
+                <img id="importPreviewImg" src="" alt="Selected QR">
+                <div id="importStatus" class="import-status"></div>
+            </div>
+
+            <div class="modal-actions" style="margin-top: 20px;">
+                <button class="btn btn-secondary" onclick="closeImportModal()">Cancel</button>
+                <button class="btn" id="confirmImportBtn" onclick="confirmImport()" style="display: none;">Import List</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // IndexedDB Setup
         const DB_NAME = 'QartieDB';
@@ -646,6 +816,7 @@
         let editingListId = null;
         let showDeleted = false;
         let showDeletedItems = false;
+        let pendingImportData = null;
 
         const EMOJIS = ['📝', '🛒', '✅', '🎯', '💡', '📚', '💼', '🏠', '🎨', '🔧', '💊', '💰', '🎁', '📅', '✈️', '🍽️'];
         const COLORS = ['#6366f1', '#ec4899', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ef4444', '#14b8a6', '#f97316', '#64748b'];
@@ -654,6 +825,11 @@
             initDB();
             renderEmojiGrid();
             renderColorGrid();
+
+            // Check if Web Share API is available
+            if (navigator.share) {
+                document.getElementById('shareBtn').style.display = 'block';
+            }
         });
 
         function initDB() {
@@ -775,6 +951,7 @@
 
             const editBtn = clone.querySelector('.edit-btn');
             const historyBtn = clone.querySelector('.history-btn');
+            const exportBtn = clone.querySelector('.export-btn');
             const deleteBtn = clone.querySelector('.delete-btn');
 
             editBtn.onclick = (e) => {
@@ -785,6 +962,11 @@
             historyBtn.onclick = (e) => {
                 e.stopPropagation();
                 openListHistoryFromCard(list.listGroupId);
+            };
+
+            exportBtn.onclick = (e) => {
+                e.stopPropagation();
+                exportListById(list.listGroupId);
             };
 
             deleteBtn.onclick = (e) => {
@@ -1041,7 +1223,503 @@
                 closeListModal();
                 closeItemModal();
                 closeHistoryModal();
+                closeQrExportModal();
+                closeImportModal();
             }
+        }
+
+        // QR Export Functions - REPLACED
+        let currentQrBlob = null;
+
+        function exportCurrentList() {
+            if (!currentListId) return;
+            exportListById(currentListId);
+        }
+
+        function exportListById(listGroupId) {
+            getLatestByGroupId('lists', 'listGroupId', listGroupId, (list) => {
+                if (!list || list.deleted) {
+                    alert('Cannot export deleted list');
+                    return;
+                }
+
+                withGetAll('items', 'listGroupId', listGroupId, (e) => {
+                    const allItems = e.target.result;
+                    const itemMap = new Map();
+
+                    allItems.forEach(item => {
+                        const groupId = item.itemGroupId || item.id;
+                        const existing = itemMap.get(groupId);
+                        if (!existing || item.created > existing.created) {
+                            itemMap.set(groupId, item);
+                        }
+                    });
+
+                    const items = Array.from(itemMap.values())
+                        .filter(i => !i.deleted)
+                        .map(i => ({
+                            t: i.text,        // Short keys to save space
+                            n: i.note || '',
+                            c: i.completed ? 1 : 0
+                        }));
+
+                    // Compact payload with short keys
+                    const payload = {
+                        v: 1,
+                        a: 'qartie',        // 'a' = app
+                        t: 'l',             // 't' = type (list)
+                        d: {                // 'd' = data
+                            t: list.title,
+                            e: list.emoji,
+                            c: list.color,
+                            i: items,
+                            cr: list.created
+                        }
+                    };
+
+                    const qrData = JSON.stringify(payload);
+                    console.log('QR payload size:', qrData.length, 'bytes');
+
+                    // Check size limit (version 40, ECC H = ~1273 bytes binary)
+                    if (qrData.length > 1200) {
+                        alert('List is too large for QR code. Try removing some items or shortening text.');
+                        return;
+                    }
+
+                    generateQrCard(qrData, list, items.length);
+                });
+            });
+        }
+
+        function generateQrCard(qrData, list, itemCount) {
+            const canvas = document.getElementById('qrCardCanvas');
+            const ctx = canvas.getContext('2d');
+            const width = 600;
+            const height = 800;
+
+            // Clear canvas
+            ctx.clearRect(0, 0, width, height);
+
+            // Create gradient background
+            const gradient = ctx.createLinearGradient(0, 0, width, height);
+            const baseColor = list.color;
+            gradient.addColorStop(0, baseColor);
+            gradient.addColorStop(1, adjustBrightness(baseColor, -30));
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, width, height);
+
+            // Add subtle pattern
+            ctx.fillStyle = 'rgba(255,255,255,0.03)';
+            for (let i = 0; i < width; i += 40) {
+                for (let j = 0; j < height; j += 40) {
+                    ctx.fillRect(i, j, 20, 20);
+                }
+            }
+
+            // Draw emoji
+            ctx.font = '80px serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.shadowColor = 'rgba(0,0,0,0.3)';
+            ctx.shadowBlur = 20;
+            ctx.fillText(list.emoji, width / 2, 120);
+            ctx.shadowBlur = 0;
+
+            // Draw title
+            ctx.font = 'bold 42px -apple-system, BlinkMacSystemFont, sans-serif';
+            ctx.fillStyle = '#ffffff';
+            ctx.fillText(truncateText(ctx, list.title, 500), width / 2, 200);
+
+            // UTF-8 encode the data manually before QR generation
+            const encoder = new TextEncoder();
+            const utf8Bytes = encoder.encode(qrData);
+
+            // Calculate required version for byte length
+            const typeNumber = getQrVersion(utf8Bytes.length);
+
+            // Create QR with explicit byte mode using UTF-8 bytes
+            const qr = qrcode(typeNumber, 'L');
+
+            // Add ECI indicator for UTF-8 (value 26) then byte data
+            // qrcode-generator\'s addData accepts mode as second param
+            // But we need to pass raw bytes. The library doesn\'t support this directly,
+            // so we use a workaround: create segments manually or use string with proper encoding
+
+            // WORKAROUND: qrcode-generator doesn\'t support raw byte arrays well.
+            // Instead, we encode as a string where each byte becomes a character
+            // with code point 0-255. This preserves UTF-8 byte sequence in the QR.
+            let byteString = '';
+            for (let i = 0; i < utf8Bytes.length; i++) {
+                byteString += String.fromCharCode(utf8Bytes[i]);
+            }
+
+            qr.addData(byteString, 'Byte');
+            qr.make();
+
+            // Draw QR code manually - cell by cell
+            const qrSize = 280;
+            const cellSize = qrSize / qr.getModuleCount();
+            const qrX = (width - qrSize) / 2;
+            const qrY = 260;
+
+            // White rounded background for QR
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.roundRect(qrX - 10, qrY - 10, qrSize + 20, qrSize + 20, 20);
+            ctx.fill();
+
+            // Draw QR modules
+            for (let row = 0; row < qr.getModuleCount(); row++) {
+                for (let col = 0; col < qr.getModuleCount(); col++) {
+                    if (qr.isDark(row, col)) {
+                        ctx.fillStyle = '#000000';
+                        ctx.fillRect(qrX + col * cellSize, qrY + row * cellSize, cellSize, cellSize);
+                    }
+                }
+            }
+
+            // Draw metadata
+            ctx.font = '24px monospace';
+            ctx.fillStyle = 'rgba(255,255,255,0.8)';
+            ctx.textAlign = 'center';
+
+            const dateStr = new Date().toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric'
+            });
+
+            ctx.fillText(`${itemCount} items • ${dateStr}`, width / 2, 600);
+            ctx.fillText(`Version 1 • Plain Text`, width / 2, 635);
+
+            // Draw footer
+            ctx.font = '18px monospace';
+            ctx.fillStyle = 'rgba(255,255,255,0.5)';
+            ctx.fillText('Scan with Qartie to import', width / 2, 740);
+
+            // Convert to blob for sharing
+            canvas.toBlob((blob) => {
+                currentQrBlob = blob;
+            }, 'image/png');
+
+            // Show info
+            document.getElementById('qrInfo').textContent =
+                `${(utf8Bytes.length / 1024).toFixed(2)} KB • ${itemCount} items • QR v${typeNumber}`;
+
+            document.getElementById('qrExportModal').classList.add('active');
+        }
+
+        // Calculate required QR version based on data length
+        function getQrVersion(dataLength) {
+            // Version capacity table for Binary data, ECC Level H
+            // These are approximate safe limits
+            const capacities = [
+                0, 17, 32, 53, 78, 106, 134, 154, 192, 230,  // 1-9
+                271, 321, 367, 425, 458, 520, 586, 644, 718, 792,  // 10-19
+                858, 929, 1003, 1091, 1171, 1273, 1367, 1465, 1528, 1628,  // 20-29
+                1732, 1840, 1952, 2068, 2188, 2303, 2431, 2563, 2699, 2809,  // 30-39
+                2953  // 40
+            ];
+
+            for (let v = 1; v <= 40; v++) {
+                if (dataLength <= capacities[v]) {
+                    return v;
+                }
+            }
+            return 40; // Maximum
+        }
+
+        function truncateText(ctx, text, maxWidth) {
+            let width = ctx.measureText(text).width;
+            if (width <= maxWidth) return text;
+
+            let truncated = text;
+            while (width > maxWidth && truncated.length > 0) {
+                truncated = truncated.slice(0, -1);
+                width = ctx.measureText(truncated + '...').width;
+            }
+            return truncated + '...';
+        }
+
+        function adjustBrightness(hex, percent) {
+            const num = parseInt(hex.replace('#', ''), 16);
+            const amt = Math.round(2.55 * percent);
+            const R = (num >> 16) + amt;
+            const G = (num >> 8 & 0x00FF) + amt;
+            const B = (num & 0x0000FF) + amt;
+            return '#' + (0x1000000 + (R < 255 ? R < 1 ? 0 : R : 255) * 0x10000 +
+                (G < 255 ? G < 1 ? 0 : G : 255) * 0x100 +
+                (B < 255 ? B < 1 ? 0 : B : 255))
+                .toString(16).slice(1);
+        }
+
+        function closeQrExportModal() {
+            document.getElementById('qrExportModal').classList.remove('active');
+            currentQrBlob = null;
+        }
+
+        function downloadQrCard() {
+            const canvas = document.getElementById('qrCardCanvas');
+            const link = document.createElement('a');
+            link.download = `qartie-list-${Date.now()}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+
+        async function shareQrCard() {
+            if (!currentQrBlob || !navigator.share) return;
+
+            const file = new File([currentQrBlob], 'qartie-list.png', { type: 'image/png' });
+
+            try {
+                await navigator.share({
+                    title: 'Qartie List',
+                    text: 'Import this list into Qartie!',
+                    files: [file]
+                });
+            } catch (err) {
+                console.log('Share cancelled or failed:', err);
+            }
+        }
+
+        // Import Functions
+        function openImportModal() {
+            pendingImportData = null;
+            document.getElementById('qrFileInput').value = '';
+            document.getElementById('importPreview').style.display = 'none';
+            document.getElementById('confirmImportBtn').style.display = 'none';
+            document.getElementById('importModal').classList.add('active');
+        }
+
+        function closeImportModal() {
+            document.getElementById('importModal').classList.remove('active');
+            pendingImportData = null;
+        }
+
+        function handleQrFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    // Show preview
+                    document.getElementById('importPreviewImg').src = e.target.result;
+                    document.getElementById('importPreview').style.display = 'block';
+
+                    // Decode QR
+                    decodeQrFromImage(img);
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function decodeQrFromImage(img) {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            ctx.drawImage(img, 0, 0);
+
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const code = jsQR(imageData.data, imageData.width, imageData.height);
+
+            const statusEl = document.getElementById('importStatus');
+
+            if (code) {
+                try {
+                    let qrText;
+
+                    // jsQR returns data in code.data as a string
+                    // But if it contains UTF-8, we need to handle it carefully
+                    if (code.data && code.data.length > 0) {
+                        // jsQR may have decoded as Latin-1, so we need to re-encode
+                        // and then decode as UTF-8
+                        const latin1Encoder = new TextEncoder();
+                        const latin1Bytes = latin1Encoder.encode(code.data);
+
+                        // Wait - TextEncoder encodes as UTF-8, not Latin-1!
+                        // We need to manually convert: treat each char code as a byte
+                        const bytes = new Uint8Array(code.data.length);
+                        for (let i = 0; i < code.data.length; i++) {
+                            bytes[i] = code.data.charCodeAt(i) & 0xFF;
+                        }
+
+                        // Now decode as UTF-8
+                        qrText = new TextDecoder('utf-8').decode(bytes);
+                    } else if (code.binaryData && code.binaryData.length > 0) {
+                        qrText = new TextDecoder('utf-8').decode(new Uint8Array(code.binaryData));
+                    } else {
+                        throw new Error('No data found in QR code');
+                    }
+
+                    console.log('Decoded QR text:', qrText);
+
+                    const data = JSON.parse(qrText);
+
+                    // Validate structure (support both old and compact formats)
+                    const isValid = (
+                        (data.v === 1 || data.version === 1) &&
+                        (data.a === 'qartie' || data.app === 'qartie') &&
+                        (data.t === 'l' || data.type === 'list') &&
+                        (data.d || data.data)
+                    );
+
+                    if (isValid) {
+                        const payload = data.d || data.data;
+                        pendingImportData = {
+                            title: payload.t || payload.title,
+                            emoji: payload.e || payload.emoji,
+                            color: payload.c || payload.color,
+                            items: (payload.i || payload.items || []).map(item => ({
+                                text: item.t || item.text,
+                                note: item.n || item.note || '',
+                                completed: (item.c || item.completed) ? true : false
+                            })),
+                            created: payload.cr || payload.created || Date.now()
+                        };
+
+                        statusEl.textContent = `Found: "${pendingImportData.title}" with ${pendingImportData.items.length} items`;
+                        statusEl.className = 'import-status success';
+                        document.getElementById('confirmImportBtn').style.display = 'block';
+                    } else {
+                        throw new Error('Invalid QR code format');
+                    }
+                } catch (err) {
+                    console.error('Import decode error:', err);
+                    statusEl.textContent = 'Error: ' + err.message;
+                    statusEl.className = 'import-status error';
+                    document.getElementById('confirmImportBtn').style.display = 'none';
+                }
+            } else {
+                statusEl.textContent = 'No QR code found in image';
+                statusEl.className = 'import-status error';
+                document.getElementById('confirmImportBtn').style.display = 'none';
+            }
+        }
+
+        function decodeQrFromImage(img) {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            ctx.drawImage(img, 0, 0);
+
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const code = jsQR(imageData.data, imageData.width, imageData.height);
+
+            const statusEl = document.getElementById('importStatus');
+
+            if (code) {
+                try {
+                    let qrText;
+
+                    // Try .data first (jsQR\'s UTF-8 decoded string)
+                    if (code.data && code.data.length > 0) {
+                        qrText = code.data;
+                    }
+                    // Fallback to binaryData with proper UTF-8 decoding
+                    else if (code.binaryData && code.binaryData.length > 0) {
+                        // binaryData is Uint8ClampedArray, convert to Uint8Array then decode
+                        const uint8Array = new Uint8Array(code.binaryData);
+                        qrText = new TextDecoder('utf-8').decode(uint8Array);
+                    } else {
+                        throw new Error('No data found in QR code');
+                    }
+
+                    console.log('Raw QR text:', qrText);
+
+                    const data = JSON.parse(qrText);
+
+                    // Validate structure (support both old and compact formats)
+                    const isValid = (
+                        (data.v === 1 || data.version === 1) &&
+                        (data.a === 'qartie' || data.app === 'qartie') &&
+                        (data.t === 'l' || data.type === 'list') &&
+                        (data.d || data.data)
+                    );
+
+                    if (isValid) {
+                        const payload = data.d || data.data;
+                        pendingImportData = {
+                            title: payload.t || payload.title,
+                            emoji: payload.e || payload.emoji,
+                            color: payload.c || payload.color,
+                            items: (payload.i || payload.items || []).map(item => ({
+                                text: item.t || item.text,
+                                note: item.n || item.note || '',
+                                completed: (item.c || item.completed) ? true : false
+                            })),
+                            created: payload.cr || payload.created || Date.now()
+                        };
+
+                        statusEl.textContent = `Found: "${pendingImportData.title}" with ${pendingImportData.items.length} items`;
+                        statusEl.className = 'import-status success';
+                        document.getElementById('confirmImportBtn').style.display = 'block';
+                    } else {
+                        throw new Error('Invalid QR code format');
+                    }
+                } catch (err) {
+                    console.error('Import decode error:', err);
+                    statusEl.textContent = 'Error: ' + err.message;
+                    statusEl.className = 'import-status error';
+                    document.getElementById('confirmImportBtn').style.display = 'none';
+                }
+            } else {
+                statusEl.textContent = 'No QR code found in image';
+                statusEl.className = 'import-status error';
+                document.getElementById('confirmImportBtn').style.display = 'none';
+            }
+        }
+
+        function confirmImport() {
+            if (!pendingImportData) return;
+
+            const now = Date.now();
+            const listGroupId = crypto.randomUUID();
+
+            const list = {
+                listGroupId: listGroupId,
+                title: pendingImportData.title,
+                emoji: pendingImportData.emoji,
+                color: pendingImportData.color,
+                created: now,
+                deleted: false
+            };
+
+            withAdd('lists', list, (e) => {
+                const newListId = e.target.result;
+
+                // Add items
+                if (pendingImportData.items && pendingImportData.items.length > 0) {
+                    let added = 0;
+                    pendingImportData.items.forEach(item => {
+                        const itemGroupId = crypto.randomUUID();
+                        const newItem = {
+                            listGroupId: listGroupId,
+                            itemGroupId: itemGroupId,
+                            text: item.text,
+                            note: item.note || '',
+                            completed: item.completed || false,
+                            created: now,
+                            deleted: false
+                        };
+
+                        withAdd('items', newItem, () => {
+                            added++;
+                            if (added === pendingImportData.items.length) {
+                                closeImportModal();
+                                openList(listGroupId);
+                            }
+                        });
+                    });
+                } else {
+                    closeImportModal();
+                    openList(listGroupId);
+                }
+            });
         }
 
         // List Operations
